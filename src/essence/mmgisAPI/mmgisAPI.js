@@ -109,9 +109,12 @@ var mmgisAPI_ = {
                 true
             )
 
-            // Then add
-            if (didSet)
+            // Then add. Parse the new config first, as the WebSocket path does (updateLayersHelper):
+            // modifyLayer only renders layers that are already in L_.layers.data.
+            if (didSet) {
+                await L_.resetConfig(configData)
                 await L_.modifyLayer(configData, layerObj.name, 'addLayer')
+            }
             else {
                 reject('Failed to add layer.')
                 return
@@ -131,7 +134,8 @@ var mmgisAPI_ = {
             }
         })
         if (didRemove) {
-            L_.modifyLayer(configData, layerUUID, 'removeLayer')
+            // Remove from the map while the layer is still registered, then re-parse without it
+            L_.modifyLayer(configData, layerUUID, 'removeLayer').then(() => L_.resetConfig(configData))
             return true
         }
         return false
